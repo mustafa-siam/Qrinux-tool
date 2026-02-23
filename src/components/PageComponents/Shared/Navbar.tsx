@@ -1,32 +1,63 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ArrowUpRight, ArrowLeft } from 'lucide-react';
+import { Menu, X, ArrowUpRight, ArrowLeft, LogOut } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { createClient } from '@/lib/supabase';
+import { toast } from 'react-toastify';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null); // Supabase user
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
 
   const isHomePage = pathname === '/';
 
+  // 1️⃣ Detect scroll
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // 2️⃣ Fetch logged-in user
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+    getUser();
+
+    // Optional: subscribe to auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // 3️⃣ Logout function
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setUser(null);
+    toast.info("Logged out successfully");
+    router.push("/auth/login");
+  };
 
   const navLinks = [
     { name: 'INDEX', href: '/' },
     { name: 'ABOUT', href: '/about' },
     { name: 'SERVICES', href: '/services' },
-    
   ];
 
   return (
@@ -38,17 +69,10 @@ const Navbar = () => {
             href="/" 
             className="flex items-center gap-2 group cursor-none flex-1"
           >
-            <div className=" flex items-center justify-center transform group-hover:rotate-90 transition-transform duration-500 shrink-0 shadow-lg shadow-yellow-400/20">
-              <span >
-                <Image
-                src="/Tlogo.png"
-                alt='logo'
-                width={40}
-                height={40}
-                />
-              </span>
+            <div className="flex items-center justify-center transform group-hover:rotate-90 transition-transform duration-500 shrink-0 shadow-lg shadow-yellow-400/20">
+              <Image src="/Tlogo.png" alt='logo' width={40} height={40} />
             </div>
-            <span className="text-xl font-bold tracking-wider  font-heading truncate">TOO<span className='text-[#9DFF91] tracking-wider'>LTIFY</span></span>
+            <span className="text-xl font-bold tracking-wider font-heading truncate">TOO<span className='text-[#9DFF91] tracking-wider'>LTIFY</span></span>
           </Link>
 
           <div className="hidden md:flex items-center justify-center gap-8 flex-1">
@@ -75,14 +99,23 @@ const Navbar = () => {
             )}
           </div>
 
+          {/* Conditional Login / Logout */}
           <div className="flex-1 flex justify-end items-center gap-4">
-            <Link 
-              href="/#contact"
-              className="hidden sm:flex items-center gap-2 px-5 py-2 border border-zinc-700 text-zinc-300 text-[10px] font-bold uppercase tracking-widest hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-all active:scale-95"
-            >
-              START
-              <ArrowUpRight size={12} className="hidden lg:block" />
-            </Link>
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="hidden sm:flex items-center gap-2 px-5 py-2 border border-zinc-700 text-zinc-300 text-[10px] font-bold uppercase tracking-widest hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-all active:scale-95"
+              >
+                LOGOUT <LogOut size={12} />
+              </button>
+            ) : (
+              <Link 
+                href="/login"
+                className="hidden sm:flex items-center gap-2 px-5 py-2 border border-zinc-700 text-zinc-300 text-[10px] font-bold uppercase tracking-widest hover:bg-yellow-400 hover:text-black hover:border-yellow-400 transition-all active:scale-95"
+              >
+                LOGIN <ArrowUpRight size={12} className="hidden lg:block" />
+              </Link>
+            )}
 
             <button 
               className="p-2 text-zinc-400 hover:text-yellow-400 transition-colors md:hidden" 
@@ -95,6 +128,7 @@ const Navbar = () => {
         </nav>
       </div>
 
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div 
@@ -131,13 +165,22 @@ const Navbar = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: navLinks.length * 0.05 }}
               >
-                <Link
-                  href="/#contact"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="mt-8 px-12 py-4 bg-yellow-400 text-black font-black uppercase tracking-widest text-xs shadow-xl shadow-yellow-400/20 block text-center"
-                >
-                  START A PROJECT
-                </Link>
+                {user ? (
+                  <button
+                    onClick={handleLogout}
+                    className="mt-8 px-12 py-4 bg-yellow-400 text-black font-black uppercase tracking-widest text-xs shadow-xl shadow-yellow-400/20 block text-center"
+                  >
+                    LOGOUT
+                  </button>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="mt-8 px-12 py-4 bg-yellow-400 text-black font-black uppercase tracking-widest text-xs shadow-xl shadow-yellow-400/20 block text-center"
+                  >
+                    LOGIN
+                  </Link>
+                )}
               </motion.div>
             </div>
           </motion.div>

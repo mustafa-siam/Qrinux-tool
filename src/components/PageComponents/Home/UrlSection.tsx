@@ -12,39 +12,45 @@ const UrlSection = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleShorten = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!longUrl) return;
+  e.preventDefault();
+  if (!longUrl) return;
 
-    setIsLoading(true);
-    const supabase = createClient();
-    const shortCode = nanoid(6);
+  setIsLoading(true);
+  const supabase = createClient();
+  const shortCode = nanoid(6);
 
-    try {
-      // id, user_id, and clicks are handled by database defaults
-      const { error } = await supabase
-        .from("urls")
-        .insert([
-          { 
-            long_url: longUrl, 
-            short_code: shortCode 
-          }
-        ]);
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
 
-      if (error) throw error;
-
-      const fullShortUrl = `${window.location.origin}/${shortCode}`;
-      setShortUrl(fullShortUrl);
-      setLongUrl(""); 
-      toast.success("🚀 Link shortened successfully!");
-
-    } catch (error: any) {
-      console.error("Supabase Error:", error);
-      // Policy errors now visible via toast thanks to your RLS updates
-      toast.error(error.message || "Failed to shorten URL.");
-    } finally {
+    if (!user) {
+      toast.error("You must be logged in to shorten a URL");
       setIsLoading(false);
+      return;
     }
-  };
+
+    const { error } = await supabase
+      .from("urls")
+      .insert([
+        { 
+          long_url: longUrl,
+          short_code: shortCode,
+          user_id: user.id
+        }
+      ]);
+
+    if (error) throw error;
+
+    const fullShortUrl = `${window.location.origin}/${shortCode}`;
+    setShortUrl(fullShortUrl);
+    setLongUrl("");
+    toast.success("🚀 Link shortened successfully!");
+  } catch (error: any) {
+    console.error("Supabase Error:", error);
+    toast.error(error.message || "Failed to shorten URL.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const copyToClipboard = () => {
     if (!shortUrl) return;
@@ -59,8 +65,8 @@ const UrlSection = () => {
 
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12">
         <div className="flex-1 text-left z-10">
-          <h2 className="text-4xl lg:text-7xl text-white font-extrabold mb-6">
-            The only <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D670FF] to-[#00F0FF]">URL Shortener</span> <br /> 
+          <h2 className="text-4xl lg:text-6xl text-white font-bold mb-6">
+            The only<span className="bg-clip-text bg-gradient-to-r from-[#D670FF] to-[#00F0FF]"> URL Shortener</span> <br /> 
             you&rsquo;ll ever need! 
           </h2>
           
@@ -79,7 +85,7 @@ const UrlSection = () => {
             <button 
               type="submit" 
               disabled={isLoading}
-              className="px-8 py-4 bg-gradient-to-r from-[#D670FF] to-[#00F0FF] rounded-xl font-bold text-black hover:scale-105 transition-all active:scale-95 disabled:opacity-50"
+              className="px-8 py-4 bg-[#00F0FF] rounded-xl font-bold text-black hover:scale-105 transition-all active:scale-95 disabled:opacity-50"
             >
               {isLoading ? "Shortening..." : "Shorten!"}
             </button>
