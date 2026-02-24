@@ -28,7 +28,7 @@ export default function SignupPage() {
       return;
     }
 
-    toast.success("✅ Signup successful! Please check your email.");
+    toast.success("Signup successful! Please check your email.");
     router.push("/login");
   };
 

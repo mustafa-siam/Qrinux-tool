@@ -28,7 +28,7 @@ export default function LoginPage() {
       return;
     }
 
-    toast.success("✅ Logged in successfully!");
+    toast.success("Logged in successfully!");
     router.push("/"); // Redirect to homepage after login
   };
 

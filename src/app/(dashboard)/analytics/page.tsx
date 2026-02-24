@@ -7,7 +7,7 @@ export default function AnalyticsPage() {
   return (
     <div>
       <h1>Analytics Dashboard</h1>
-      <p>Stats will appear here.</p>
+      <p>there you can see all stats</p>
     </div>
   );
 }
