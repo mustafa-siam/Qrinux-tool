@@ -19,14 +19,12 @@ const Navbar = () => {
 
   const isHomePage = pathname === '/';
 
-  // 1️⃣ Detect scroll
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 2️⃣ Fetch logged-in user
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -34,15 +32,12 @@ const Navbar = () => {
     };
     getUser();
 
-    // Optional: subscribe to auth changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
 
     return () => listener.subscription.unsubscribe();
   }, []);
-
-  // 3️⃣ Logout function
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -51,13 +46,13 @@ const Navbar = () => {
     }
     setUser(null);
     toast.info("Logged out successfully");
-    router.push("/auth/login");
+    router.push("/login");
   };
 
   const navLinks = [
     { name: 'INDEX', href: '/' },
-    { name: 'ABOUT', href: '/about' },
-    { name: 'SERVICES', href: '/services' },
+    { name: 'ABOUT', href: '/' },
+    { name: 'SERVICES', href: '/' },
   ];
 
   return (
@@ -99,7 +94,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Conditional Login / Logout */}
+          
           <div className="flex-1 flex justify-end items-center gap-4">
             {user ? (
               <button
